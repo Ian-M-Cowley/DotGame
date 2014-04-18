@@ -1,6 +1,6 @@
 package com.icowley.dotgame.model;
 
-import com.icowley.dotgame.DotGameActivityV2.LineType;
+import com.icowley.dotgame.DotGameActivity.LineType;
 
 public class Line {
     public int row;

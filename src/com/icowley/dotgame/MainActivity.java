@@ -28,9 +28,9 @@ public class MainActivity extends Activity implements OnClickListener {
     public void onClick(View v) {
         Intent intent = null;
         if(v == mOnePlayerButton) {
-            intent = DotGameActivityV2.newIntent(this, 1, GRIDSIZE);
+            intent = DotGameActivity.newIntent(this, 1, GRIDSIZE);
         } else if(v == mTwoPlayerButton) {
-            intent = DotGameActivityV2.newIntent(this, 0, GRIDSIZE);
+            intent = DotGameActivity.newIntent(this, 0, GRIDSIZE);
         }
         startActivity(intent);
     }

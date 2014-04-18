@@ -2,8 +2,8 @@ package com.icowley.dotgame.model;
 
 import java.util.ArrayList;
 
-import com.icowley.dotgame.DotGameActivityV2.ActivePlayer;
-import com.icowley.dotgame.DotGameActivityV2.LineType;
+import com.icowley.dotgame.DotGameActivity.ActivePlayer;
+import com.icowley.dotgame.DotGameActivity.LineType;
 
 import android.util.Log;
 import android.util.Pair;
@@ -36,6 +36,17 @@ public class BoardState {
         mOpenHorizLines = new ArrayList<Line>();
         mTotalOpenMoves = 0;
         mListener = listener;
+    }
+    
+    public BoardState(BoardState other) {
+        this.mOpenHorizLines = new ArrayList<Line>(other.mOpenHorizLines);
+        this.mOpenVertLines = new ArrayList<Line>(other.mOpenVertLines);
+        this.mScores = new int[2];
+        this.mScores[0] = other.mScores[0];
+        this.mScores[1] = other.mScores[1];
+        this.mTotalOpenMoves = other.mTotalOpenMoves;
+        this.mActivePlayer = other.mActivePlayer;
+        this.mGridSize = other.mGridSize;
     }
 
     public int[] getScores() {

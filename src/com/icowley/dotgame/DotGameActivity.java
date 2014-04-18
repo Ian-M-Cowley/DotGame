@@ -1,183 +1,227 @@
 package com.icowley.dotgame;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.w3c.dom.Text;
-
 import android.app.Activity;
-import android.content.res.Resources;
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Pair;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class DotGameActivity extends Activity implements OnClickListener {
+import com.icowley.dotgame.model.BoardState;
+import com.icowley.dotgame.model.BoardState.UiUpdateListener;
+import com.icowley.dotgame.model.Line;
 
-    public static final String NUM_PLAYERS_EXTRA = "num_players";
-    private int mNumPlayers = 0;
-    private int mActivePlayer = 0;
-    private int[] mPlayerColors = { Color.BLUE, Color.RED };
-    private int[] mScores = new int[2];
-    private Button[][] mButtons = new Button[6][6];
-    private View[][] mHorizontalLines = new View[6][5];
-    private HashMap<Pair<Integer, Integer>, Boolean> mHorizontalLinesFilledMap = new HashMap<Pair<Integer, Integer>, Boolean>();
-    private View[][] mVerticalLines = new View[5][6];
-    private HashMap<Pair<Integer, Integer>, Boolean> mVerticalLinesFilledMap = new HashMap<Pair<Integer, Integer>, Boolean>();
-    private View[][] mBoxes = new View[5][5];
-    private TextView[] mScoreTexts = new TextView[2];
-    private Pair<Integer, Integer> mFirstClickLoc = null;
+public class DotGameActivity extends Activity implements OnClickListener, UiUpdateListener {
+    public static final String TAG = DotGameActivity.class.getSimpleName();
+    private static final String NUM_BOTS_EXTRA = "num_players";
+    private static final String GRID_SIZE_EXTRA = "grid_size";
+
+    private int mNumBots;
+    private ActivePlayer mActivePlayer;
+    private int mGridSize;
+    private static int[] mPlayerColors = { Color.BLUE, Color.RED };
+    private static int[] mBoxColors = { R.color.light_blue, R.color.light_red };
+
+    private Button[][] mHorizontalLineViews;
+    private Button[][] mVerticalLineViews;
+    private View[][] mBoxes;
+    private TextView[] mScoreTexts;
+    private ProgressBar mProgress;
+    private LinearLayout mGridContainer;
+    private int mRemainingBoxes;
+
+    private BoardState mCurrentBoardState;
+
+    public static enum LineType {
+        Horizontal, Vertical
+    }
+
+    public static enum ActivePlayer {
+        First, Second
+    }
+
+    public static Intent newIntent(Context context, int numBots, int gridSize) {
+        Intent intent = new Intent(context, DotGameActivity.class);
+        intent.putExtra(NUM_BOTS_EXTRA, numBots);
+        intent.putExtra(GRID_SIZE_EXTRA, gridSize);
+        return intent;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (savedInstanceState != null) {
-            mNumPlayers = savedInstanceState.getInt(NUM_PLAYERS_EXTRA, 1);
-        }
-        setContentView(R.layout.activity_dot_game);
-        Resources res = getResources();
-        // Get a handle on all of our views.
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < 6; j++) {
-                int id = res.getIdentifier("btn_" + (i + 1) + (j + 1), "id", getPackageName());
-                mButtons[i][j] = (Button) findViewById(id);
-                mButtons[i][j].setOnClickListener(this);
-                if (i != 5) {
-                    id = res.getIdentifier("v_" + (i + 1) + (j + 1), "id", getPackageName());
-                    mVerticalLines[i][j] = findViewById(id);
-                }
-                if (j != 5) {
-                    id = res.getIdentifier("h_" + (i + 1) + (j + 1), "id", getPackageName());
-                    mHorizontalLines[i][j] = findViewById(id);
-                }
-                if (i != 5 && j != 5) {
-                    id = res.getIdentifier("b_" + (i + 1) + (j + 1), "id", getPackageName());
-                    mBoxes[i][j] = findViewById(id);
-                }
-            }
-        }
+        setContentView(R.layout.activity_dot_game_v2);
+        Intent intent = getIntent();
+        mGridContainer = (LinearLayout) findViewById(R.id.content);
+        mGridSize = intent.getIntExtra(GRID_SIZE_EXTRA, 0);
+        mNumBots = intent.getIntExtra(NUM_BOTS_EXTRA, 0);
+        mScoreTexts = new TextView[2];
         mScoreTexts[0] = (TextView) findViewById(R.id.p1_score);
         mScoreTexts[1] = (TextView) findViewById(R.id.p2_score);
-    }
-
-    /**
-     * Does the work to switch from one player's turn to the other.
-     */
-    private void switchTurns() {
-        mFirstClickLoc = null;
-        if (mActivePlayer == 0) {
-            mActivePlayer = 1;
-        } else {
-            mActivePlayer = 0;
+        mProgress = (ProgressBar) findViewById(R.id.progress);
+        mHorizontalLineViews = new Button[mGridSize][mGridSize - 1];
+        mVerticalLineViews = new Button[mGridSize - 1][mGridSize];
+        mBoxes = new View[mGridSize - 1][mGridSize - 1];
+        createGrid(mGridSize);
+        createBoardState();
+        onDoneCreatingGrid();
+        mActivePlayer = ActivePlayer.First;
+        if (mNumBots == 2) {
+            makeComputerMove(mActivePlayer);
         }
     }
 
-    /**
-     * Increments the score of the player whose player number is passed in.
-     * 
-     * @param playerNumber
-     *            : The number of the player whose score we increment.
-     */
-    private void incrementScore(int playerNumber) {
-        mScores[playerNumber]++;
-        mScoreTexts[playerNumber].setText("Player " + (playerNumber + 1) + ": "
-                + mScores[playerNumber]);
-    }
-
-    /**
-     * Finds the location of the button that was clicked.
-     * 
-     * @param b
-     *            : The button to find.
-     * @return The location of the button clicked.
-     */
-    private Pair<Integer, Integer> findButton(Button b) {
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < 6; j++) {
-                if (b == mButtons[i][j]) {
-                    return Pair.create(i, j);
+    private void createBoardState() {
+        mCurrentBoardState = new BoardState(this);
+        for (int row = 0; row < mGridSize; row++) {
+            for (int col = 0; col < mGridSize; col++) {
+                if (col != mGridSize - 1) {
+                    Line line = new Line(row, col, LineType.Horizontal);
+                    mCurrentBoardState.addLine(line);
+                }
+                if (row != mGridSize - 1) {
+                    Line line = new Line(row, col, LineType.Vertical);
+                    mCurrentBoardState.addLine(line);
                 }
             }
         }
-        return null;
+        mCurrentBoardState.setGridSize(mGridSize);
+        Log.d("IC", mCurrentBoardState.toString());
     }
 
-    @Override
-    public void onClick(View view) {
-        Pair<Integer, Integer> clickLocation = findButton((Button) view);
-        if (clickLocation != null) {
-            Log.d("Location", clickLocation.first + " , " + clickLocation.second);
-            if (mFirstClickLoc == null) { // If we haven't made a first "dot"
-                                          // choice.
-                mFirstClickLoc = clickLocation; // Set our first choice.
-                view.setEnabled(false); // Disable the button so they can't
-                                        // click it again.
-            } else { // We already have a first choice, so go on to check if the
-                     // selection is valid.
-                boolean validChoice = onSecondChoiceMade(clickLocation);
-                if (validChoice) {
-                    switchTurns(); // The choice was valid so we switch player
-                                   // turns.
+    private void createGrid(int gridSize) {
+        mRemainingBoxes = (int) Math.pow((gridSize-1),2);
+        int l = 150;
+        int s = 50;
+        LayoutInflater inflater = LayoutInflater.from(this);
+        LayoutParams dotParams = new LayoutParams(s, s);
+        LayoutParams boxParams = new LayoutParams(l, l);
+        LayoutParams hParams = new LayoutParams(l, s);
+        LayoutParams vParams = new LayoutParams(s, l);
+        for (int row = 0; row < (gridSize * 2) - 1; row++) {
+            LinearLayout rowLayout = new LinearLayout(this);
+            rowLayout.setOrientation(LinearLayout.HORIZONTAL);
+            LayoutParams params;
+            if (row % 2 == 0) {
+                params = new LayoutParams(mGridSize * s + (mGridSize - 1) * l, s);
+            } else {
+                params = new LayoutParams(mGridSize * s + (mGridSize - 1) * l, l);
+            }
+            for (int col = 0; col < (gridSize * 2) - 1; col++) {
+                if (row % 2 == 0) { // Horizontal Button row
+                    if (col % 2 == 0) { // Add a dot
+                        View dot = inflater.inflate(R.layout.dot, null);
+                        dot.setLayoutParams(dotParams);
+                        rowLayout.addView(dot);
+                    } else { // Add a Horizontal Button
+                        Button button = (Button) inflater.inflate(R.layout.horizontal_button, null);
+                        button.setLayoutParams(hParams);
+                        button.setOnClickListener(this);
+                        button.setTag(new Line(row / 2, col / 2, LineType.Horizontal));
+                        mHorizontalLineViews[row / 2][col / 2] = button;
+                        rowLayout.addView(button);
+                    }
+                } else { // Vertical Button row
+                    if (col % 2 == 0) { // Add a Vertical Button
+                        Button button = (Button) inflater.inflate(R.layout.vertical_button, null);
+                        button.setLayoutParams(vParams);
+                        button.setOnClickListener(this);
+                        button.setTag(new Line(row / 2, col / 2, LineType.Vertical));
+                        mVerticalLineViews[row / 2][col / 2] = button;
+                        rowLayout.addView(button);
+                    } else { // Add a box
+                        View box = inflater.inflate(R.layout.box, null);
+                        box.setLayoutParams(boxParams);
+                        mBoxes[row / 2][col / 2] = box;
+                        rowLayout.addView(box);
+                    }
                 }
             }
+            rowLayout.setLayoutParams(params);
+            mGridContainer.addView(rowLayout);
         }
-
     }
 
-    private boolean onSecondChoiceMade(Pair<Integer, Integer> secondLocation) {
-        int i1 = mFirstClickLoc.first;
-        int j1 = mFirstClickLoc.second;
-        int i2 = secondLocation.first;
-        int j2 = secondLocation.second;
-        int horDist = j2 - j1;
-        int vertDist = i2 - i1;
-        Pair<Integer, Integer> lineLocation;
-        mButtons[i1][j1].setEnabled(true);
-        if (horDist == 1 || horDist == -1) { // The player clicked 2 buttons next to eachother.
-            if (horDist == 1) { // The left button was clicked first.
-                lineLocation = Pair.create(i1, j1);
-            } else { // The right button in the pair was clicked first.
-                lineLocation = Pair.create(i2, j2);
-            }
+    private void onDoneCreatingGrid() {
+        mProgress.setVisibility(View.GONE);
+        mGridContainer.setVisibility(View.VISIBLE);
+    }
 
-            if (!mHorizontalLinesFilledMap.containsKey(lineLocation)) { // If the line is not already filled in.
-                mHorizontalLines[lineLocation.first][lineLocation.second]
-                        .setBackgroundColor(mPlayerColors[mActivePlayer]); // Set the lines color.
-                mHorizontalLinesFilledMap.put(lineLocation, true); // Set the line as filled.
-                Toast.makeText(this,
-                        "Player " + mActivePlayer + " successfully made a horizontal line.",
-                        Toast.LENGTH_LONG).show();
-                return true;
-            }
-
-        } else if (vertDist == 1 || vertDist == -1) { // the player clicked 2 buttons on top of eachother.
-            if (vertDist == 1) { // The bottom button was clicked first.
-                lineLocation = Pair.create(i1, j1);
-            } else { // The top button in the pair was clicked first.
-                lineLocation = Pair.create(i2, j2);
-            }
-
-            if (!mVerticalLinesFilledMap.containsKey(lineLocation)) { // If the line is not already filled in.
-                mVerticalLines[lineLocation.first][lineLocation.second]
-                        .setBackgroundColor(mPlayerColors[mActivePlayer]); // Set the lines color.
-                mVerticalLinesFilledMap.put(lineLocation, true); // Set the line as filled.
-                Toast.makeText(this,
-                        "Player " + mActivePlayer + " successfully made a vertical line.",
-                        Toast.LENGTH_LONG).show();
-                return true;
-            }
-
-        }
-        Toast.makeText(this,
-                "Player " + mActivePlayer + " did not choose two buttons next to eachother.",
-                Toast.LENGTH_LONG).show();
-        mFirstClickLoc = null;
+    /**
+     * Makes Computer Move
+     * 
+     * @return whether to have the same player go again.
+     */
+    private boolean makeComputerMove(ActivePlayer player) {
         return false;
     }
 
+    private void onLineSelected(Line line) {
+        boolean shouldSwitchPlayers = mCurrentBoardState.onLineSelected(line, true);
+        if (shouldSwitchPlayers) {
+            switchPlayers();
+        }
+    }
+
+    private void switchPlayers() {
+        if (mActivePlayer == ActivePlayer.First) {
+            mActivePlayer = ActivePlayer.Second;
+        } else {
+            mActivePlayer = ActivePlayer.First;
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        Line tag = null;
+        if (v.getTag() instanceof Line) {
+            tag = (Line) v.getTag();
+            onLineSelected(tag);
+            v.setEnabled(false);
+        }
+    }
+
+    @Override
+    public void colorLine(Line line) {
+        if (line.lineType == LineType.Horizontal) {
+            mHorizontalLineViews[line.row][line.col].setBackgroundColor(mPlayerColors[mActivePlayer.ordinal()]);
+        } else {
+            mVerticalLineViews[line.row][line.col].setBackgroundColor(mPlayerColors[mActivePlayer.ordinal()]);
+        }
+    }
+
+    @Override
+    public void colorBox(Pair<Integer, Integer> location) {
+        mRemainingBoxes--;
+        mBoxes[location.first][location.second].setBackgroundColor(getResources().getColor(
+                mBoxColors[mActivePlayer.ordinal()]));
+        int playerNum = mActivePlayer.ordinal() + 1;
+        mScoreTexts[playerNum - 1]
+                .setText("Player " + playerNum + ": " + mCurrentBoardState.getScores()[playerNum - 1]);
+        if(mRemainingBoxes == 0) {
+            endGame();
+        }
+    }
+
+    private void endGame() {
+        int[] scores = mCurrentBoardState.getScores();
+        if(scores[0] > scores[1]) {
+            Toast.makeText(this, "Player 1 Wins!", Toast.LENGTH_LONG).show();
+        } else if(scores[0] < scores[1]) {
+            Toast.makeText(this, "Player 2 Wins!", Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this, "It's a Tie!", Toast.LENGTH_LONG).show();
+        }
+        // TODO: Find something to do to end the game.
+    }
 }
