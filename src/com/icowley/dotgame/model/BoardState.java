@@ -20,7 +20,7 @@ public class BoardState {
     private static UiUpdateListener mListener;
 
     public BoardState(int[] scores, ActivePlayer activePlayer, ArrayList<Line> openHorizLines,
-            ArrayList<Line> openVertLines, int gridSize) {
+                    ArrayList<Line> openVertLines, int gridSize) {
         mScores = scores;
         setOpenHorizLines(openHorizLines);
         setOpenVertLines(openVertLines);
@@ -37,7 +37,7 @@ public class BoardState {
         mTotalOpenMoves = 0;
         mListener = listener;
     }
-    
+
     public BoardState(BoardState other) {
         this.mOpenHorizLines = new ArrayList<Line>(other.mOpenHorizLines);
         this.mOpenVertLines = new ArrayList<Line>(other.mOpenVertLines);
@@ -208,7 +208,7 @@ public class BoardState {
     @Override
     public String toString() {
         String s = "I have " + mOpenHorizLines.size() + " horizontal lines and " + mOpenVertLines.size()
-                + " vertical lines.";
+                        + " vertical lines.";
         return s;
     }
 

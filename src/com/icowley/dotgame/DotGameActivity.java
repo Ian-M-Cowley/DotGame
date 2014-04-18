@@ -100,7 +100,7 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
     }
 
     private void createGrid(int gridSize) {
-        mRemainingBoxes = (int) Math.pow((gridSize-1),2);
+        mRemainingBoxes = (int) Math.pow((gridSize - 1), 2);
         int l = 150;
         int s = 50;
         LayoutInflater inflater = LayoutInflater.from(this);
@@ -204,20 +204,20 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
     public void colorBox(Pair<Integer, Integer> location) {
         mRemainingBoxes--;
         mBoxes[location.first][location.second].setBackgroundColor(getResources().getColor(
-                mBoxColors[mActivePlayer.ordinal()]));
+                        mBoxColors[mActivePlayer.ordinal()]));
         int playerNum = mActivePlayer.ordinal() + 1;
         mScoreTexts[playerNum - 1]
-                .setText("Player " + playerNum + ": " + mCurrentBoardState.getScores()[playerNum - 1]);
-        if(mRemainingBoxes == 0) {
+                        .setText("Player " + playerNum + ": " + mCurrentBoardState.getScores()[playerNum - 1]);
+        if (mRemainingBoxes == 0) {
             endGame();
         }
     }
 
     private void endGame() {
         int[] scores = mCurrentBoardState.getScores();
-        if(scores[0] > scores[1]) {
+        if (scores[0] > scores[1]) {
             Toast.makeText(this, "Player 1 Wins!", Toast.LENGTH_LONG).show();
-        } else if(scores[0] < scores[1]) {
+        } else if (scores[0] < scores[1]) {
             Toast.makeText(this, "Player 2 Wins!", Toast.LENGTH_LONG).show();
         } else {
             Toast.makeText(this, "It's a Tie!", Toast.LENGTH_LONG).show();
