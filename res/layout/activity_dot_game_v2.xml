@@ -4,15 +4,15 @@
     android:layout_height="match_parent" >
 
     <FrameLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:background="#FFFFFF" >
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center" >
 
         <LinearLayout
             android:id="@+id/content"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:orientation="vertical"
             android:visibility="invisible" >
         </LinearLayout>
@@ -21,23 +21,26 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
+            android:paddingBottom="20dp"
             android:orientation="vertical" >
 
             <TextView
+                android:drawableLeft="@drawable/blue_square"
                 android:id="@+id/p1_score"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center" 
+                android:layout_gravity="center"
                 android:text="Player 1: 0"
-                android:textSize="20sp"/>
+                android:textSize="20sp" />
 
             <TextView
+                android:drawableLeft="@drawable/red_square"
                 android:id="@+id/p2_score"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="Player 2: 0" 
-                android:textSize="20sp"/>
+                android:text="Player 2: 0"
+                android:textSize="20sp" />
         </LinearLayout>
     </FrameLayout>
 

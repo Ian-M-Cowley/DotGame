@@ -61,7 +61,7 @@ public class BoardState {
     public void setOpenHorizLines(ArrayList<Line> openHorizLines) {
         mOpenHorizLines = openHorizLines;
     }
-    
+
     public int getGridSize() {
         return mGridSize;
     }
@@ -115,7 +115,18 @@ public class BoardState {
             mListener.colorLine(line);
         }
         boolean shouldSwitch = !checkForCompleteSquare(line, shouldUpdateUI);
+        if (shouldSwitch) {
+            switchPlayers();
+        }
         return shouldSwitch;
+    }
+
+    private void switchPlayers() {
+        if (mActivePlayer == ActivePlayer.First) {
+            mActivePlayer = ActivePlayer.Second;
+        } else {
+            mActivePlayer = ActivePlayer.First;
+        }
     }
 
     private boolean checkForCompleteSquare(Line line, boolean shouldUpdateUI) {
@@ -128,14 +139,11 @@ public class BoardState {
                 Line hT = new Line(row, col - 1, LineType.Horizontal);
                 Line hB = new Line(row + 1, col - 1, LineType.Horizontal);
                 Line vL = new Line(row, col - 1, LineType.Vertical);
-
-                if (!mOpenHorizLines.contains(hB)) {
-                    for (int i = 0; i < mOpenHorizLines.size(); i++) {
-                        Log.d("HOR", mOpenHorizLines.get(i).toString());
-                    }
-                }
                 if (!mOpenHorizLines.contains(hT) && !mOpenHorizLines.contains(hB) && !mOpenVertLines.contains(vL)) {
-                    mListener.colorBox(Pair.create(row, col - 1));
+                    mScores[mActivePlayer.ordinal()]++;
+                    if (shouldUpdateUI) {
+                        mListener.colorBox(Pair.create(row, col - 1));
+                    }
                     didCompleteSquare = true;
                 }
             }
@@ -146,6 +154,7 @@ public class BoardState {
                 Line hB = new Line(row + 1, col, LineType.Horizontal);
                 Line vR = new Line(row, col + 1, LineType.Vertical);
                 if (!mOpenHorizLines.contains(hT) && !mOpenHorizLines.contains(hB) && !mOpenVertLines.contains(vR)) {
+                    mScores[mActivePlayer.ordinal()]++;
                     if (shouldUpdateUI) {
                         mListener.colorBox(Pair.create(row, col));
                     }
@@ -160,6 +169,7 @@ public class BoardState {
                 Line vL = new Line(row, col, LineType.Vertical);
                 Line vR = new Line(row, col + 1, LineType.Vertical);
                 if (!mOpenVertLines.contains(vR) && !mOpenHorizLines.contains(hB) && !mOpenVertLines.contains(vL)) {
+                    mScores[mActivePlayer.ordinal()]++;
                     if (shouldUpdateUI) {
                         mListener.colorBox(Pair.create(row, col));
                     }
@@ -173,6 +183,7 @@ public class BoardState {
                 Line vL = new Line(row - 1, col, LineType.Vertical);
                 Line vR = new Line(row - 1, col + 1, LineType.Vertical);
                 if (!mOpenHorizLines.contains(hT) && !mOpenVertLines.contains(vL) && !mOpenVertLines.contains(vR)) {
+                    mScores[mActivePlayer.ordinal()]++;
                     if (shouldUpdateUI) {
                         mListener.colorBox(Pair.create(row - 1, col));
                     }

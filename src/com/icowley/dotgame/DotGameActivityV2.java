@@ -63,6 +63,7 @@ public class DotGameActivityV2 extends Activity implements OnClickListener, UiUp
         mGridContainer = (LinearLayout) findViewById(R.id.content);
         mGridSize = intent.getIntExtra(GRID_SIZE_EXTRA, 0);
         mNumBots = intent.getIntExtra(NUM_BOTS_EXTRA, 0);
+        mScoreTexts = new TextView[2];
         mScoreTexts[0] = (TextView) findViewById(R.id.p1_score);
         mScoreTexts[1] = (TextView) findViewById(R.id.p2_score);
         mProgress = (ProgressBar) findViewById(R.id.progress);
