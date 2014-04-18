@@ -16,6 +16,8 @@ public class BoardState {
     private ArrayList<BoardState> mNextStates = null;
     private int mTotalOpenMoves;
     private int mGridSize;
+    private int mDepth = 0;
+    private int mLeftRight = 0;
 
     private static UiUpdateListener mListener;
 
@@ -111,14 +113,53 @@ public class BoardState {
         mTotalOpenMoves++;
     }
 
-    private void generateAllPossibleNextStatesOfGame() {
+    public int getDepth() {
+        return mDepth;
+    }
 
+    public void setDepth(int depth) {
+        mDepth = depth;
+    }
+
+    public int getLeftRight() {
+        return mLeftRight;
+    }
+
+    public void setLeftRight(int leftRight) {
+        mLeftRight = leftRight;
+    }
+
+    private void generateAllPossibleNextStatesOfGame() {
+        for (int i = 0; i < mOpenHorizLines.size(); i++) {
+            BoardState nextState = new BoardState(this);
+            nextState.setDepth(mDepth + 1);
+            nextState.setLeftRight(i);
+            while (nextState.onLineSelected(mOpenHorizLines.get(i), false)) {
+
+            }
+            mNextStates.add(nextState);
+        }
+        for (int j = 0; j < mOpenVertLines.size(); j++) {
+            BoardState nextState = new BoardState(this);
+            nextState.setDepth(mDepth + 1);
+            int lr = mOpenHorizLines.size() + j;
+            nextState.setLeftRight(lr);
+            nextState.onLineSelected(mOpenVertLines.get(j), false);
+            mNextStates.add(nextState);
+        }
     }
 
     public Pair<Pair<Integer, Integer>, LineType> getBestMove(int player1Score, int player2Score) {
         return null;
     }
 
+    /**
+     * Update state of the board when a line is selected.
+     * 
+     * @param line
+     * @param shouldUpdateUI
+     * @return whether you should switch players
+     */
     public boolean onLineSelected(Line line, boolean shouldUpdateUI) {
         Log.d("LINE", line.toString());
         removeLine(line);
