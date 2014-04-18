@@ -28,14 +28,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center" 
-                android:text="Player 1: 0"/>
+                android:text="Player 1: 0"
+                android:textSize="20sp"/>
 
             <TextView
                 android:id="@+id/p2_score"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="Player 2: 0" />
+                android:text="Player 2: 0" 
+                android:textSize="20sp"/>
         </LinearLayout>
     </FrameLayout>
 
