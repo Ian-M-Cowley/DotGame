@@ -148,6 +148,10 @@ public class BoardState {
             mNextStates.add(nextState);
         }
     }
+    
+    private BoardState generateNextStateRecursive() {
+        return null;
+    }
 
     public Pair<Pair<Integer, Integer>, LineType> getBestMove(int player1Score, int player2Score) {
         return null;
