@@ -2,11 +2,10 @@ package com.icowley.dotgame.model;
 
 import java.util.ArrayList;
 
+import android.util.Pair;
+
 import com.icowley.dotgame.DotGameActivity.ActivePlayer;
 import com.icowley.dotgame.DotGameActivity.LineType;
-
-import android.util.Log;
-import android.util.Pair;
 
 public class BoardState {
     private int[] mScores;
@@ -181,6 +180,46 @@ public class BoardState {
         generateAllPossibleNextStatesOfGame();
         return null;
     }
+    
+    /**
+     * 
+     * @param state
+     * @return <Location in next state array, ending score of second player if that state is chosen>
+     *          <Location, Score>
+     */
+    public Pair<Integer,Integer> aStarSearch(BoardState state) {
+        if(state.mNextStates == null || state.mNextStates.size() == 0) { // If the passed in node is a leaf, return it.
+            return Pair.create(0, state.mScores[1]);
+        }
+        if(state.mDepth % 2 == 0) { // We are at a max state
+            int maxScore = -1;
+            int location = -1;
+            for(int i = 0; i < mNextStates.size(); i++) {
+                Pair<Integer, Integer> info = aStarSearch(mNextStates.get(i));
+                if(info.second > maxScore) {
+                    maxScore = info.second;
+                    location = info.first;
+                }
+            }
+            if(state.mDepth == 0) {
+                if(mListener != null) {
+                    mListener.makeSetOfMoves(state.mNextStates.get(location).mMoveSetToGetToThisState);
+                }
+            }
+            return Pair.create(location, maxScore);
+        } else { // We are at a min state
+            int minScore = Integer.MAX_VALUE;
+            int location = -1;
+            for(int i = 0; i < mNextStates.size(); i++) {
+                Pair<Integer, Integer> info = aStarSearch(mNextStates.get(i));
+                if(info.second < minScore) {
+                    minScore = info.second;
+                    location = info.first;
+                }
+            }
+            return Pair.create(location, minScore);
+        }
+    }
 
     /**
      * Update state of the board when a line is selected.
@@ -286,5 +325,7 @@ public class BoardState {
         public void colorLine(Line line);
 
         public void colorBox(Pair<Integer, Integer> location);
+        
+        public void makeSetOfMoves(MoveSet set);
     }
 }

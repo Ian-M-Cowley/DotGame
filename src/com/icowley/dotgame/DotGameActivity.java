@@ -1,5 +1,7 @@
 package com.icowley.dotgame;
 
+import java.util.ArrayList;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -20,6 +22,7 @@ import android.widget.Toast;
 import com.icowley.dotgame.model.BoardState;
 import com.icowley.dotgame.model.BoardState.UiUpdateListener;
 import com.icowley.dotgame.model.Line;
+import com.icowley.dotgame.model.MoveSet;
 
 public class DotGameActivity extends Activity implements OnClickListener, UiUpdateListener {
     public static final String TAG = DotGameActivity.class.getSimpleName();
@@ -230,5 +233,13 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
             Toast.makeText(this, "It's a Tie!", Toast.LENGTH_LONG).show();
         }
         // TODO: Find something to do to end the game.
+    }
+
+    @Override
+    public void makeSetOfMoves(MoveSet set) {
+        ArrayList<Line> moves = set.getMoves();
+        for(int i = 0; i < moves.size(); i++) {
+            
+        }
     }
 }
