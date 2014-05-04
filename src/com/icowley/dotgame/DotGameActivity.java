@@ -162,8 +162,9 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
      * 
      * @return whether to have the same player go again.
      */
-    private boolean makeComputerMove(ActivePlayer player) {
-        return false;
+    private void makeComputerMove(ActivePlayer player) {
+        int[] currentScores = mCurrentBoardState.getScores();
+        mCurrentBoardState.getBestMove(currentScores[0], currentScores[1]);
     }
 
     private void onLineSelected(Line line) {
@@ -176,8 +177,14 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
     private void switchPlayers() {
         if (mActivePlayer == ActivePlayer.First) {
             mActivePlayer = ActivePlayer.Second;
+            if (mNumBots == 1) {
+                makeComputerMove(mActivePlayer);
+            }
         } else {
             mActivePlayer = ActivePlayer.First;
+            if (mNumBots == 2) {
+                makeComputerMove(mActivePlayer);
+            }
         }
     }
 
@@ -204,10 +211,10 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
     public void colorBox(Pair<Integer, Integer> location) {
         mRemainingBoxes--;
         mBoxes[location.first][location.second].setBackgroundColor(getResources().getColor(
-                        mBoxColors[mActivePlayer.ordinal()]));
+                mBoxColors[mActivePlayer.ordinal()]));
         int playerNum = mActivePlayer.ordinal() + 1;
         mScoreTexts[playerNum - 1]
-                        .setText("Player " + playerNum + ": " + mCurrentBoardState.getScores()[playerNum - 1]);
+                .setText("Player " + playerNum + ": " + mCurrentBoardState.getScores()[playerNum - 1]);
         if (mRemainingBoxes == 0) {
             endGame();
         }

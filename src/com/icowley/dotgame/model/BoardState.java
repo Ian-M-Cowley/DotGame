@@ -13,6 +13,7 @@ public class BoardState {
     private ArrayList<Line> mOpenVertLines;
     private ArrayList<Line> mOpenHorizLines;
     private ActivePlayer mActivePlayer;
+    private MoveSet mMoveSetToGetToThisState;
     private ArrayList<BoardState> mNextStates = null;
     private int mTotalOpenMoves;
     private int mGridSize;
@@ -22,12 +23,14 @@ public class BoardState {
     private static UiUpdateListener mListener;
 
     public BoardState(int[] scores, ActivePlayer activePlayer, ArrayList<Line> openHorizLines,
-                    ArrayList<Line> openVertLines, int gridSize) {
+            ArrayList<Line> openVertLines, int gridSize) {
         mScores = scores;
         setOpenHorizLines(openHorizLines);
         setOpenVertLines(openVertLines);
         mActivePlayer = activePlayer;
         mTotalOpenMoves = getOpenHorizLines().size() + getOpenVertLines().size();
+        mMoveSetToGetToThisState = new MoveSet();
+        mNextStates = new ArrayList<BoardState>();
         mGridSize = gridSize;
     }
 
@@ -37,6 +40,8 @@ public class BoardState {
         mOpenVertLines = new ArrayList<Line>();
         mOpenHorizLines = new ArrayList<Line>();
         mTotalOpenMoves = 0;
+        mMoveSetToGetToThisState = new MoveSet();
+        mNextStates = new ArrayList<BoardState>();
         mListener = listener;
     }
 
@@ -49,6 +54,8 @@ public class BoardState {
         this.mTotalOpenMoves = other.mTotalOpenMoves;
         this.mActivePlayer = other.mActivePlayer;
         this.mGridSize = other.mGridSize;
+        this.mNextStates = new ArrayList<BoardState>();
+        this.mMoveSetToGetToThisState = new MoveSet(other.mMoveSetToGetToThisState);
     }
 
     public int[] getScores() {
@@ -130,30 +137,48 @@ public class BoardState {
     }
 
     private void generateAllPossibleNextStatesOfGame() {
-        for (int i = 0; i < mOpenHorizLines.size(); i++) {
-            BoardState nextState = new BoardState(this);
-            nextState.setDepth(mDepth + 1);
-            nextState.setLeftRight(i);
-            while (nextState.onLineSelected(mOpenHorizLines.get(i), false)) {
+        generateNextStateRecursive(this, this, 0);
+    }
 
+    private void generateNextStateRecursive(BoardState stateToAddTo, BoardState initialState, int depthOfStateToAddTo) {
+        if (depthOfStateToAddTo == 3)
+            return;
+        if (initialState.mOpenHorizLines.size() == 0 && initialState.mOpenVertLines.size() == 0) {
+            return;
+        } else {
+            for (int i = 0; i < initialState.mOpenHorizLines.size(); i++) {
+                //Log.d("IC", "Making H move " + i + " and a depth of " + (depthOfStateToAddTo + 1));
+                BoardState nextState = new BoardState(initialState);
+                nextState.setDepth(depthOfStateToAddTo + 1);
+                boolean shouldKeepGoing = !nextState.onLineSelected(initialState.mOpenHorizLines.get(i), false);
+                nextState.mMoveSetToGetToThisState.addMove(mOpenHorizLines.get(i));
+                stateToAddTo.mNextStates.add(nextState);
+                // Case when the move made leads to an extra turn.
+                if (shouldKeepGoing) {
+                    generateNextStateRecursive(stateToAddTo, nextState, depthOfStateToAddTo);
+                }
+                // Now for this state, generate all following states.
+                generateNextStateRecursive(nextState, nextState, nextState.mDepth);
             }
-            mNextStates.add(nextState);
+            for (int j = 0; j < initialState.mOpenVertLines.size(); j++) {
+                //Log.d("IC", "Making V move " + j + " and a depth of " + (depthOfStateToAddTo + 1));
+                BoardState nextState = new BoardState(initialState);
+                nextState.setDepth(depthOfStateToAddTo + 1);
+                boolean shouldKeepGoing = !nextState.onLineSelected(initialState.mOpenVertLines.get(j), false);
+                nextState.mMoveSetToGetToThisState.addMove(mOpenVertLines.get(j));
+                stateToAddTo.mNextStates.add(nextState);
+                // Case when the move made leads to an extra turn.
+                if (shouldKeepGoing) {
+                    generateNextStateRecursive(stateToAddTo, nextState, depthOfStateToAddTo);
+                }
+                // Now for this state generate all next possible states.
+                generateNextStateRecursive(nextState, nextState, nextState.mDepth);
+            }
         }
-        for (int j = 0; j < mOpenVertLines.size(); j++) {
-            BoardState nextState = new BoardState(this);
-            nextState.setDepth(mDepth + 1);
-            int lr = mOpenHorizLines.size() + j;
-            nextState.setLeftRight(lr);
-            nextState.onLineSelected(mOpenVertLines.get(j), false);
-            mNextStates.add(nextState);
-        }
-    }
-    
-    private BoardState generateNextStateRecursive() {
-        return null;
     }
 
-    public Pair<Pair<Integer, Integer>, LineType> getBestMove(int player1Score, int player2Score) {
+    public MoveSet getBestMove(int player1Score, int player2Score) {
+        generateAllPossibleNextStatesOfGame();
         return null;
     }
 
@@ -165,7 +190,7 @@ public class BoardState {
      * @return whether you should switch players
      */
     public boolean onLineSelected(Line line, boolean shouldUpdateUI) {
-        Log.d("LINE", line.toString());
+        //Log.d("LINE", line.toString());
         removeLine(line);
         if (shouldUpdateUI) {
             mListener.colorLine(line);
@@ -253,7 +278,7 @@ public class BoardState {
     @Override
     public String toString() {
         String s = "I have " + mOpenHorizLines.size() + " horizontal lines and " + mOpenVertLines.size()
-                        + " vertical lines.";
+                + " vertical lines.";
         return s;
     }
 
