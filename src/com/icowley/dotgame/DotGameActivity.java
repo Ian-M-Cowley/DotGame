@@ -106,7 +106,7 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
             }
         }
         mCurrentBoardState.setGridSize(mGridSize);
-        Log.d("IC", mCurrentBoardState.toString());
+        //Log.d("IC", mCurrentBoardState.toString());
     }
 
     private void createGrid(int gridSize) {
@@ -247,6 +247,7 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
 
     @Override
     public void makeSetOfMoves(final MoveSet set) {
+        //Log.d("MOVE", "# of moves to make is " + set.getMoves().size());
         final int delay = 1000; //milliseconds
         Thread thread = new Thread() {
             public void run() {
@@ -259,11 +260,16 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
                             @Override
                             public void run() {
                                 mCurrentBoardState.onLineSelected(moves.get(loc), true);
-                                mCurrentBoardState.clearNextStates();
-                                switchPlayers();
                             }
                         });
                     }
+                    mGridContainer.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            switchPlayers();
+                            mCurrentBoardState.clearNextStates();
+                        }
+                    });
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

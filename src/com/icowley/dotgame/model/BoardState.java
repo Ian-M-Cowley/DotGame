@@ -2,6 +2,7 @@ package com.icowley.dotgame.model;
 
 import java.util.ArrayList;
 
+import android.util.Log;
 import android.util.Pair;
 
 import com.icowley.dotgame.DotGameActivity.ActivePlayer;
@@ -150,11 +151,12 @@ public class BoardState {
                 BoardState nextState = new BoardState(initialState);
                 nextState.setDepth(depthOfStateToAddTo + 1);
                 boolean shouldKeepGoing = !nextState.onLineSelected(initialState.mOpenHorizLines.get(i), false);
-                nextState.mMoveSetToGetToThisState.addMove(mOpenHorizLines.get(i));
-                stateToAddTo.mNextStates.add(nextState);
+                nextState.mMoveSetToGetToThisState.addMove(initialState.mOpenHorizLines.get(i));
                 // Case when the move made leads to an extra turn.
-                if (shouldKeepGoing) {
+                if (shouldKeepGoing && (nextState.mOpenHorizLines.size() != 0 || nextState.mOpenVertLines.size() != 0)) {
                     generateNextStateRecursive(stateToAddTo, nextState, depthOfStateToAddTo);
+                } else {
+                    stateToAddTo.mNextStates.add(nextState);
                 }
                 // Now for this state, generate all following states.
                 generateNextStateRecursive(nextState, nextState, nextState.mDepth);
@@ -164,11 +166,13 @@ public class BoardState {
                 BoardState nextState = new BoardState(initialState);
                 nextState.setDepth(depthOfStateToAddTo + 1);
                 boolean shouldKeepGoing = !nextState.onLineSelected(initialState.mOpenVertLines.get(j), false);
-                nextState.mMoveSetToGetToThisState.addMove(mOpenVertLines.get(j));
-                stateToAddTo.mNextStates.add(nextState);
+                nextState.mMoveSetToGetToThisState.addMove(initialState.mOpenVertLines.get(j));
                 // Case when the move made leads to an extra turn.
-                if (shouldKeepGoing) {
+                if (shouldKeepGoing && (nextState.mOpenHorizLines.size() != 0 || nextState.mOpenVertLines.size() != 0)) {
+                    //Log.d("CREATE", "Continuing to make more states because square was completed");
                     generateNextStateRecursive(stateToAddTo, nextState, depthOfStateToAddTo);
+                } else {
+                    stateToAddTo.mNextStates.add(nextState);
                 }
                 // Now for this state generate all next possible states.
                 generateNextStateRecursive(nextState, nextState, nextState.mDepth);
@@ -179,6 +183,11 @@ public class BoardState {
     public MoveSet getBestMove() {
         generateAllPossibleNextStatesOfGame();
         Pair<Integer, Integer> location = aStarSearch(this);
+        if(mNextStates.size() == 0) {
+            Line line = mOpenHorizLines.get(0);
+            if(line == null) line = mOpenVertLines.get(0);
+            return new MoveSet(line);
+        }
         return mNextStates.get(location.first).mMoveSetToGetToThisState;
     }
     
@@ -190,6 +199,7 @@ public class BoardState {
      */
     public Pair<Integer,Integer> aStarSearch(BoardState state) {
         if(state.mNextStates == null || state.mNextStates.size() == 0) { // If the passed in node is a leaf, return it.
+            //Log.d("SEARCH", "Returning a score of " + state.mScores[1] + " at location 0");
             return Pair.create(0, state.mScores[1]);
         }
         if(state.mDepth % 2 == 0) { // We are at a max state
@@ -199,9 +209,16 @@ public class BoardState {
                 Pair<Integer, Integer> info = aStarSearch(state.mNextStates.get(i));
                 if(info.second > maxScore) {
                     maxScore = info.second;
-                    location = info.first;
+                    location = i;
+                } else if(info.second == maxScore) {
+                    int rand = (int) (Math.random() * 10);
+                    if(rand == 0) {
+                        maxScore = info.second;
+                        location = i;
+                    }
                 }
             }
+            //Log.d("MAXSEARCH", "Returning a score of " + maxScore + " at location of " + location);
             return Pair.create(location, maxScore);
         } else { // We are at a min state
             int minScore = Integer.MAX_VALUE;
@@ -210,9 +227,16 @@ public class BoardState {
                 Pair<Integer, Integer> info = aStarSearch(state.mNextStates.get(i));
                 if(info.second < minScore) {
                     minScore = info.second;
-                    location = info.first;
+                    location = i;
+                } else if(info.second == minScore) {
+                    int rand = (int) (Math.random() * 10);
+                    if(rand == 0) {
+                        minScore = info.second;
+                        location = i;
+                    }
                 }
             }
+            //Log.d("MINSEARCH", "Returning a score of " + minScore + " at location of " + location);
             return Pair.create(location, minScore);
         }
     }

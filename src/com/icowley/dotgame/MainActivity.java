@@ -12,7 +12,7 @@ public class MainActivity extends Activity implements OnClickListener {
     
     private Button mOnePlayerButton;
     private Button mTwoPlayerButton;
-    private static final int GRIDSIZE = 3;
+    private static final int GRIDSIZE = 4;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
