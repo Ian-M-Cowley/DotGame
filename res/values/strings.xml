@@ -6,5 +6,7 @@
     <string name="hello_world">Hello world!</string>
     <string name="one_player">One Player Game</string>
     <string name="two_player">Two Player Game</string>
+    <string name="active_player_one">Active Player: Player One</string>
+    <string name="active_player_two">Active Player: Player Two</string>
 
 </resources>

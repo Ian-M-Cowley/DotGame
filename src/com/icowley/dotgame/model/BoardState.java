@@ -176,9 +176,10 @@ public class BoardState {
         }
     }
 
-    public MoveSet getBestMove(int player1Score, int player2Score) {
+    public MoveSet getBestMove() {
         generateAllPossibleNextStatesOfGame();
-        return null;
+        Pair<Integer, Integer> location = aStarSearch(this);
+        return mNextStates.get(location.first).mMoveSetToGetToThisState;
     }
     
     /**
@@ -194,24 +195,19 @@ public class BoardState {
         if(state.mDepth % 2 == 0) { // We are at a max state
             int maxScore = -1;
             int location = -1;
-            for(int i = 0; i < mNextStates.size(); i++) {
-                Pair<Integer, Integer> info = aStarSearch(mNextStates.get(i));
+            for(int i = 0; i < state.mNextStates.size(); i++) {
+                Pair<Integer, Integer> info = aStarSearch(state.mNextStates.get(i));
                 if(info.second > maxScore) {
                     maxScore = info.second;
                     location = info.first;
-                }
-            }
-            if(state.mDepth == 0) {
-                if(mListener != null) {
-                    mListener.makeSetOfMoves(state.mNextStates.get(location).mMoveSetToGetToThisState);
                 }
             }
             return Pair.create(location, maxScore);
         } else { // We are at a min state
             int minScore = Integer.MAX_VALUE;
             int location = -1;
-            for(int i = 0; i < mNextStates.size(); i++) {
-                Pair<Integer, Integer> info = aStarSearch(mNextStates.get(i));
+            for(int i = 0; i < state.mNextStates.size(); i++) {
+                Pair<Integer, Integer> info = aStarSearch(state.mNextStates.get(i));
                 if(info.second < minScore) {
                     minScore = info.second;
                     location = info.first;
@@ -327,5 +323,9 @@ public class BoardState {
         public void colorBox(Pair<Integer, Integer> location);
         
         public void makeSetOfMoves(MoveSet set);
+    }
+
+    public void clearNextStates() {
+        mNextStates.clear();
     }
 }

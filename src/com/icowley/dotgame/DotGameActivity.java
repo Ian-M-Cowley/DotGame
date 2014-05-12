@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
@@ -44,6 +45,8 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
     private int mRemainingBoxes;
 
     private BoardState mCurrentBoardState;
+    private View mActiveBox;
+    private TextView mActivePlayerText;
 
     public static enum LineType {
         Horizontal, Vertical
@@ -71,6 +74,10 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
         mScoreTexts = new TextView[2];
         mScoreTexts[0] = (TextView) findViewById(R.id.p1_score);
         mScoreTexts[1] = (TextView) findViewById(R.id.p2_score);
+        mActiveBox = findViewById(R.id.active_player_box);
+        mActivePlayerText = (TextView) findViewById(R.id.active_player);
+        mActiveBox.setBackgroundColor(mPlayerColors[0]);
+        mActivePlayerText.setText(R.string.active_player_one);
         mProgress = (ProgressBar) findViewById(R.id.progress);
         mHorizontalLineViews = new Button[mGridSize][mGridSize - 1];
         mVerticalLineViews = new Button[mGridSize - 1][mGridSize];
@@ -166,8 +173,7 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
      * @return whether to have the same player go again.
      */
     private void makeComputerMove(ActivePlayer player) {
-        int[] currentScores = mCurrentBoardState.getScores();
-        mCurrentBoardState.getBestMove(currentScores[0], currentScores[1]);
+        makeSetOfMoves(mCurrentBoardState.getBestMove());
     }
 
     private void onLineSelected(Line line) {
@@ -180,11 +186,15 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
     private void switchPlayers() {
         if (mActivePlayer == ActivePlayer.First) {
             mActivePlayer = ActivePlayer.Second;
+            mActiveBox.setBackgroundColor(mPlayerColors[1]);
+            mActivePlayerText.setText(R.string.active_player_two);
             if (mNumBots == 1) {
                 makeComputerMove(mActivePlayer);
             }
         } else {
             mActivePlayer = ActivePlayer.First;
+            mActiveBox.setBackgroundColor(mPlayerColors[0]);
+            mActivePlayerText.setText(R.string.active_player_one);
             if (mNumBots == 2) {
                 makeComputerMove(mActivePlayer);
             }
@@ -236,10 +246,29 @@ public class DotGameActivity extends Activity implements OnClickListener, UiUpda
     }
 
     @Override
-    public void makeSetOfMoves(MoveSet set) {
-        ArrayList<Line> moves = set.getMoves();
-        for(int i = 0; i < moves.size(); i++) {
-            
-        }
+    public void makeSetOfMoves(final MoveSet set) {
+        final int delay = 1000; //milliseconds
+        Thread thread = new Thread() {
+            public void run() {
+                try {
+                    final ArrayList<Line> moves = set.getMoves();
+                    for (int i = 0; i < moves.size(); i++) {
+                        final int loc = i;
+                        sleep(delay);
+                        mGridContainer.post(new Runnable() {                            
+                            @Override
+                            public void run() {
+                                mCurrentBoardState.onLineSelected(moves.get(loc), true);
+                                mCurrentBoardState.clearNextStates();
+                                switchPlayers();
+                            }
+                        });
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        thread.start();
     }
 }
